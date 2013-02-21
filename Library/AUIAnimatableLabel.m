@@ -104,7 +104,9 @@
     CTFontRef fontRef = font.CTFont;
     textLayer.font = fontRef;
     textLayer.fontSize = font.pointSize;
-    CFRelease(fontRef);
+    if (fontRef != NULL) {
+        CFRelease(fontRef);
+    }
     [self setNeedsDisplay];
 }
 
