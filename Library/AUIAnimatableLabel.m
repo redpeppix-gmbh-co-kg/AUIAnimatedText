@@ -32,6 +32,8 @@
 
 @interface AUIAnimatableLabel()
 
+@property (strong, nonatomic) UIFont *actualFont;
+
 -(void) _initializeTextLayer;
 
 @end
@@ -72,13 +74,10 @@
     return self;
 }
 
--(UIColor *)textColor
-{
-    return [UIColor colorWithCGColor:textLayer.foregroundColor];
-}
-
 -(void) setTextColor:(UIColor *)textColor
 {
+    super.textColor = textColor;
+    
     textLayer.foregroundColor = textColor.CGColor;
     [self setNeedsDisplay];
 }
@@ -94,13 +93,10 @@
     [self setNeedsDisplay];
 }
 
--(UIFont *) font
-{
-    return [UIFont fontWithCTFont:textLayer.font];
-}
-
 -(void) setFont:(UIFont *)font
 {
+    super.font = font;
+    
     CTFontRef fontRef = font.CTFont;
     textLayer.font = fontRef;
     textLayer.fontSize = font.pointSize;
@@ -110,51 +106,26 @@
     [self setNeedsDisplay];
 }
 
--(void) setFrame:(CGRect)frame
-{
-    textLayer.frame = frame;
-    [super setFrame:frame];
-    [self setNeedsDisplay];
-}
-
--(UIColor *) shadowColor
-{
-    return [UIColor colorWithCGColor:textLayer.shadowColor];
-}
-
 -(void) setShadowColor:(UIColor *)shadowColor
 {
+    super.shadowColor = shadowColor;
+    
     textLayer.shadowColor = shadowColor.CGColor;
     [self setNeedsDisplay];
 }
 
--(CGSize) shadowOffset
-{
-    return textLayer.shadowOffset;
-}
-
 -(void) setShadowOffset:(CGSize)shadowOffset
 {
+    super.shadowOffset = shadowOffset;
+    
     textLayer.shadowOffset = shadowOffset;
     [self setNeedsDisplay];
 }
 
--(NSTextAlignment) textAlignment
-{
-    NSTextAlignment labelAlignment = NSTextAlignmentLeft;
-    NSString *layerAlignmentMode = textLayer.alignmentMode;
-    if ([layerAlignmentMode isEqualToString:kCAAlignmentLeft])
-        labelAlignment = NSTextAlignmentLeft;
-    else if ([layerAlignmentMode isEqualToString:kCAAlignmentRight])
-        labelAlignment = NSTextAlignmentRight;
-    else if ([layerAlignmentMode isEqualToString:kCAAlignmentCenter])
-        labelAlignment = NSTextAlignmentCenter;
-    
-    return labelAlignment;
-}
-
 -(void) setTextAlignment:(NSTextAlignment)textAlignment
 {
+    super.textAlignment = textAlignment;
+    
     switch (textAlignment) {
         case NSTextAlignmentLeft:
             textLayer.alignmentMode = kCAAlignmentLeft;
@@ -172,13 +143,10 @@
     [self setNeedsDisplay];
 }
 
--(NSLineBreakMode) lineBreakMode
-{
-    return [super lineBreakMode];
-}
-
 -(void) setLineBreakMode:(NSLineBreakMode)lineBreakMode
 {
+    super.lineBreakMode = lineBreakMode;
+    
     switch (lineBreakMode) {
         case NSLineBreakByWordWrapping:
             textLayer.wrapped = YES;
@@ -223,7 +191,17 @@
             minimumFontSize = self.minimumFontSize;
         }
         [textLayer.string sizeWithFont:self.font minFontSize:minimumFontSize actualFontSize:&newFontSize forWidth:self.bounds.size.width lineBreakMode:self.lineBreakMode];
-        self.font = [UIFont fontWithName:self.font.fontName size:newFontSize];
+        
+        self.actualFont = [UIFont fontWithName:self.font.fontName size:newFontSize];
+    } else {
+        self.actualFont = self.font;
+    }
+    
+    CTFontRef fontRef = self.actualFont.CTFont;
+    textLayer.font = fontRef;
+    textLayer.fontSize = self.actualFont.pointSize;
+    if (fontRef != NULL) {
+        CFRelease(fontRef);
     }
     
     // Resize the text so that the text will be vertically aligned according to the set alignment
@@ -258,21 +236,24 @@
 -(void) _initializeTextLayer
 {
     textLayer = [[CATextLayer alloc] init];
-    [textLayer setFrame:self.bounds];
-    textLayer.contentsScale = [[UIScreen mainScreen] scale];
-    textLayer.rasterizationScale = [[UIScreen mainScreen] scale];
+    textLayer.frame = self.bounds;
+    textLayer.contentsScale = UIScreen.mainScreen.scale;
+    textLayer.rasterizationScale = UIScreen.mainScreen.scale;
+    [self.layer addSublayer:textLayer];
     
     // Initialize the default.
-    self.textColor = [super textColor];
-    self.font = [super font];
-    self.backgroundColor = [super backgroundColor];
-    self.text = [super text];
-    self.textAlignment = [super textAlignment];
-    self.lineBreakMode = [super lineBreakMode];
+    self.textColor = super.textColor;
+    self.font = super.font;
+    self.backgroundColor = super.backgroundColor;
+    self.text = super.text;
+    self.textAlignment = super.textAlignment;
+    self.lineBreakMode = super.lineBreakMode;
     // TODO: Get the value from the contentMode property so that the vertical alignment could be set via interface builder
     self.verticalTextAlignment = AUITextVerticalAlignmentCenter;
-    [super setText:nil];
-    [self.layer addSublayer:textLayer];
+    
+    super.text = nil;
+    
+    
 }
 
 @end
